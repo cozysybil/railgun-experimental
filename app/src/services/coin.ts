@@ -342,10 +342,20 @@ export async function transfer(
   privateKey: string,
   to: string,
   amount: string
-): Promise<void> {
-  // Assuming the contract method name is "mint"
-  const wallet = new Wallet(privateKey, provider);
-  const contractWithSigner = new Contract(contractAddress, contractABI, wallet);
+): Promise<string> {
+  try {
+    const wallet = new Wallet(privateKey, provider);
+    const contractWithSigner = new Contract(
+      contractAddress,
+      contractABI,
+      wallet
+    );
 
-  await contractWithSigner.transfer(to, amount);
+    const receipt = await contractWithSigner.transfer(to, amount);
+
+    return receipt.hash;
+  } catch (error) {
+    console.error("Error fetching balance:", error);
+    return "Transaction failed";
+  }
 }

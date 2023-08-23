@@ -12,6 +12,7 @@ const SubUserSection = (props: SubUserSectionProps) => {
   const { address, privateSection, privateKey } = props;
   const [tokenBalance, setTokenBalance] = useState("0");
   const [mintLoading, setMintLoading] = useState(false);
+  const [txHash, setTxHash] = useState("");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -41,7 +42,8 @@ const SubUserSection = (props: SubUserSectionProps) => {
 
   const handleTransferClick = async (to: string) => {
     try {
-      await transfer(privateKey, to, "1"); // Call the mint function
+      const transactionHash = await transfer(privateKey, to, "1"); // Call the mint function
+      setTxHash(transactionHash);
       // Fetch the updated balance after minting
       const balance = await getBalance(address);
       setTokenBalance(balance);
@@ -120,6 +122,7 @@ const SubUserSection = (props: SubUserSectionProps) => {
           inputContainerClassName="grow"
         />
       </div>
+      {txHash.length > 0 && <div className="break-words text-xs">{txHash}</div>}
     </div>
   );
 };
