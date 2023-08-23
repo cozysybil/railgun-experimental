@@ -15,7 +15,7 @@ const SubUserSection = (props: SubUserSectionProps) => {
       <div className="basis-5/12 flex items-center text-5xl">
         15 {privateSection ? "zkAA" : "AA"}
       </div>
-      <div className="basis-3/12 items-center">
+      <div className="basis-3/12 items-center ">
         <ActionWithAddress
           buttonName={privateSection ? "Unshield" : "Shield"}
           buttonAction={
@@ -27,17 +27,20 @@ const SubUserSection = (props: SubUserSectionProps) => {
                   console.log("Shield");
                 }
           }
+          buttonContainerClassName={
+            privateSection
+              ? "basis-1/3 bg-gradient-to-r from-pink-500 to-violet-500 text-white text-xs font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+              : "basis-1/3 bg-violet-500 to-violet-500 text-white text-xs font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+          }
           inputId={privateSection ? "unshieldTo" : "shieldTo"}
           inputPlaceHolder={
-            privateSection
-              ? "Enter address you will unshield to"
-              : "Enter address you will shield to"
+            privateSection ? "Unshield to address ..." : "Shield to address ..."
           }
           inputType="text"
           inputContainerClassName="grow"
         />
       </div>
-      <div className="basis-3/12  items-center">
+      <div className="basis-3/12 items-center">
         <ActionWithAddress
           buttonName={privateSection ? "Private Spend" : "Public Spend"}
           buttonAction={
@@ -49,12 +52,13 @@ const SubUserSection = (props: SubUserSectionProps) => {
                   console.log("Public Spend");
                 }
           }
-          inputId={privateSection ? "privateSpendTo" : "publicSpendTo"}
-          inputPlaceHolder={
+          buttonContainerClassName={
             privateSection
-              ? "Enter address you will spend to"
-              : "Enter address you will spend to"
+              ? "basis-1/3 bg-gradient-to-r from-pink-500 to-violet-500 text-white text-xs font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+              : "basis-1/3 bg-violet-500 to-violet-500 text-white text-xs font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
           }
+          inputId={privateSection ? "privateSpendTo" : "publicSpendTo"}
+          inputPlaceHolder="Spend to address ..."
           inputType="text"
           inputContainerClassName="grow"
         />
