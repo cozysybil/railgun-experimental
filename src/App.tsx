@@ -4,10 +4,34 @@ import "./App.css";
 import SubUserSection from "./component/SubUserSection";
 import ActionWithAddress from "./component/ActionWithAddress";
 
+// @ts-ignore
+import { ArrowPathIcon } from "@heroicons/react/24/solid";
+
 function App() {
+  const [showMessage, setShowMessage] = useState(false);
+
+  const handleButtonClick = () => {
+    setShowMessage(true);
+    setTimeout(() => {
+      setShowMessage(false);
+    }, 2000);
+  };
+
   return (
     <div className="w-full h-screen bg-slate-900">
       <div className="grid grid-cols-4 grid-rows-6 gap-4 h-full p-5">
+        <button
+          type="submit"
+          onClick={handleButtonClick}
+          className="absolute top-8 right-8 bg-violet-500 text-white text-sm font-bold py-1 px-3 rounded-full flex items-center"
+        >
+          <ArrowPathIcon className="w-4 h-4 mr-1" /> Refresh
+        </button>
+        {showMessage && (
+          <div className="absolute top-8 left-1/2 transform -translate-x-1/2 bg-gray-300 shadow p-2 rounded w-50">
+            Fetching new data ...
+          </div>
+        )}
         <div className="col-span-4 text-4xl font-extrabold flex items-center">
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-violet-500">
             Railgun Lab
