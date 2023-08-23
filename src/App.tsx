@@ -18,7 +18,7 @@ function App() {
             Account
           </span>
         </div>
-        <div className="row-span-2 col-span-2 bg-zinc-100 rounded flex flex-col p-5 grid grid-cols-4 grid-rows-6 gap-4 h-full p-10">
+        <div className="row-span-2 col-span-2 bg-zinc-100 rounded flex flex-col p-5 grid grid-cols-4 gap-4 h-full">
           <SubUserSection
             address={"0xZK00000000000000000000000000000"}
             privateSection={true}
@@ -28,7 +28,7 @@ function App() {
             privateSection={false}
           />
         </div>
-        <div className="row-span-2 col-span-2 bg-zinc-100 rounded flex flex-col p-5 grid grid-cols-4 grid-rows-6 gap-4 h-full p-10">
+        <div className="row-span-2 col-span-2 bg-zinc-100 rounded flex flex-col p-5 grid grid-cols-4 gap-4 h-full">
           <SubUserSection
             address={"0xZK00000000000000000000000000000"}
             privateSection={true}
