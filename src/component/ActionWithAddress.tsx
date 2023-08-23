@@ -1,9 +1,9 @@
-import React, { useRef, HTMLProps } from "react"; // Import HTMLProps
+import React, { useRef, HTMLProps, useState, ChangeEvent } from "react"; // Import HTMLProps
 import Input from "./Input"; // Make sure to adjust the path based on your file structure
 
 interface ActionWithAddressProps extends HTMLProps<HTMLInputElement> {
   buttonName: string;
-  buttonAction: () => void;
+  buttonAction: (inputValue: string) => void;
   buttonContainerClassName?: string;
   inputId: string;
   inputPlaceHolder: string;
@@ -22,6 +22,16 @@ const ActionWithAddress = (props: ActionWithAddressProps) => {
     inputContainerClassName = "",
   } = props;
 
+  const [inputValue, setInputValue] = useState("");
+
+  const handleInputChange = (event: ChangeEvent<HTMLInputElement>) => {
+    setInputValue(event.target.value);
+  };
+
+  const handleButtonClick = () => {
+    buttonAction(inputValue);
+  };
+
   return (
     <div className="grow flex flex-row gap-2 items-center">
       <Input
@@ -30,12 +40,10 @@ const ActionWithAddress = (props: ActionWithAddressProps) => {
         type={inputType}
         containerClassName={inputContainerClassName}
         required
+        value={inputValue}
+        onChange={handleInputChange}
       />
-      <button
-        type="submit"
-        onClick={buttonAction}
-        className={buttonContainerClassName}
-      >
+      <button onClick={handleButtonClick} className={buttonContainerClassName}>
         {buttonName}
       </button>
     </div>

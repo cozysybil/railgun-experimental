@@ -71,8 +71,8 @@ function App() {
           <div className="basis-1/6 flex items-center">
             <ActionWithAddress
               buttonName="View"
-              buttonAction={() => {
-                console.log("View transaction");
+              buttonAction={(value) => {
+                console.log("View transaction: ", value);
               }}
               buttonContainerClassName="basis-1/12 bg-violet-500 text-white text-xs font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
               inputId="viewTx"

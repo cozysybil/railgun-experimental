@@ -35,11 +35,11 @@ const SubUserSection = (props: SubUserSectionProps) => {
           buttonName={privateSection ? "Unshield" : "Shield"}
           buttonAction={
             privateSection
-              ? () => {
-                  console.log("Unshield");
+              ? (value) => {
+                  console.log("Unshield to:", value);
                 }
-              : () => {
-                  console.log("Shield");
+              : (value) => {
+                  console.log("Shield to:", value);
                 }
           }
           buttonContainerClassName={
@@ -60,11 +60,11 @@ const SubUserSection = (props: SubUserSectionProps) => {
           buttonName={privateSection ? "Private Send" : "Public Send"}
           buttonAction={
             privateSection
-              ? () => {
-                  console.log("Private send");
+              ? (value) => {
+                  console.log("Private send to:", value);
                 }
-              : () => {
-                  console.log("Public send");
+              : (value) => {
+                  console.log("Public send to:", value);
                 }
           }
           buttonContainerClassName={
