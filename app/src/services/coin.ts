@@ -1,4 +1,4 @@
-import { ethers } from "ethers";
+import { ethers, Contract } from "ethers";
 
 // Define the contract address and ABI
 const contractAddress = process.env.REACT_APP_COIN_ADDRESS || "";
@@ -318,8 +318,27 @@ export async function getBalance(address: string): Promise<string> {
   ) {
     return "0";
   }
-  const balance = await coinContract.balanceOf(address);
-  return balance.toString();
+  try {
+    const balance = await coinContract.balanceOf(address);
+    console.log("Balance:", balance.toString());
+    return balance.toString();
+  } catch (error) {
+    console.error("Error fetching balance:", error);
+    return "0";
+  }
+}
+
+// Function to transfer coins
+export async function mint(to: string, amount: string): Promise<void> {
+  // Assuming the contract method name is "mint"
+  const signer = await provider.getSigner();
+  const contractWithSigner = new Contract(
+    contractAddress,
+    contractABI,
+    signer
+  );
+
+  await contractWithSigner.mint(to, amount);
 }
 
 // // Function to transfer coins
