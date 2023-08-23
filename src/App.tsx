@@ -8,12 +8,12 @@ function App() {
   return (
     <div className="w-full h-screen bg-slate-900">
       <div className="grid grid-cols-4 grid-rows-6 gap-4 h-full p-5">
-        <div className="col-span-4 rounded text-5xl font-extrabold flex items-center">
+        <div className="col-span-4 text-4xl font-extrabold flex items-center">
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-violet-500">
             Railgun Lab
           </span>
         </div>
-        <div className="row-span-2 col-span-2 bg-zinc-100 rounded flex flex-col p-5 grid grid-cols-4 gap-4 h-full">
+        <div className="col-span-2 row-span-2 bg-zinc-100 rounded flex flex-col p-5 grid grid-cols-4 gap-4 h-full">
           <div className="row-span-2 col-span-4 text-sm grid place-items-center">
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-violet-500">
               Account A
@@ -28,7 +28,7 @@ function App() {
             privateSection={false}
           />
         </div>
-        <div className="row-span-2 col-span-2 bg-zinc-100 rounded flex flex-col p-5 grid grid-cols-4 gap-4 h-full">
+        <div className="col-span-2 row-span-2 bg-zinc-100 rounded flex flex-col p-5 grid grid-cols-4 gap-4 h-full">
           <div className="row-span-2 col-span-4 text-sm grid place-items-center">
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-violet-500">
               Account B
@@ -43,7 +43,7 @@ function App() {
             privateSection={false}
           />
         </div>
-        <div className="row-span-3 col-span-4 bg-zinc-100 rounded flex flex-col p-5">
+        <div className="col-span-4 row-span-5 bg-zinc-100 rounded flex flex-col p-5">
           <div className="basis-1/6 flex items-center">
             <ActionWithAddress
               buttonName="View"

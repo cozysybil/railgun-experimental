@@ -12,7 +12,7 @@ const SubUserSection = (props: SubUserSectionProps) => {
   return (
     <div className="row-span-2 col-span-2 rounded flex flex-col p-1 gap-2 h-full overflow-auto">
       <div className="basis-1/12 break-words text-xs">Address: {address}</div>
-      <div className="basis-5/12 flex items-center text-5xl">
+      <div className="basis-5/12 flex items-center text-4xl">
         15 {privateSection ? "zkAA" : "AA"}
       </div>
       <div className="basis-3/12 items-center ">
