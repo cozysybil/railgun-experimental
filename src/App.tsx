@@ -1,24 +1,56 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React, { useEffect, useState } from "react";
+import logo from "./logo.svg";
+import Input from "./component/Input";
+import PrivateSection from "./component/PrivateSection";
+import PublicSection from "./component/PublicSection";
+import "./App.css";
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div className="w-full h-screen bg-slate-900">
+      <div className="grid grid-cols-4 grid-rows-6 gap-4 h-full p-10">
+        <div className="col-span-3 rounded text-5xl font-extrabold flex items-center">
+          <span className="bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-violet-500">
+            Railgun Lab
+          </span>
+        </div>
+        <div className="flex justify-end">
+          <span className="bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-violet-500">
+            Account
+          </span>
+        </div>
+        <div className="row-span-2 col-span-2 bg-zinc-100 rounded flex flex-col p-5">
+          <PrivateSection />
+        </div>
+        <div className="row-span-2 col-span-2 bg-zinc-100 rounded flex flex-col p-5">
+          <PublicSection />
+        </div>
+        <div className="row-span-3 col-span-4 bg-zinc-100 rounded flex flex-col p-5">
+          <div className="basis-1/6 flex items-center">
+            <div className="grow flex flex-row gap-2">
+              <Input
+                id="viewTx"
+                placeholder="Enter transaction you want to view"
+                type="text"
+                containerClassName="grow"
+                required
+              />
+              <button
+                type="submit"
+                onClick={() => {
+                  console.log("View transaction");
+                }}
+                className="basis-1/12 bg-gradient-to-r from-pink-500 to-violet-500 text-white text-xs font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+              >
+                View
+              </button>
+            </div>
+          </div>
+          <div className="basis-5/6 mt-4 bg-gray-200 p-4 rounded overflow-auto">
+            <p className="text-gray-400">Nothing to show here</p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
