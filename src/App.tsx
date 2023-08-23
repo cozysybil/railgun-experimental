@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from "react";
-import logo from "./logo.svg";
 import Input from "./component/Input";
-import PrivateSection from "./component/PrivateSection";
-import PublicSection from "./component/PublicSection";
 import "./App.css";
+import SubUserSection from "./component/SubUserSection";
 
 function App() {
   return (
@@ -19,11 +17,25 @@ function App() {
             Account
           </span>
         </div>
-        <div className="row-span-2 col-span-2 bg-zinc-100 rounded flex flex-col p-5">
-          <PrivateSection />
+        <div className="row-span-2 col-span-2 bg-zinc-100 rounded flex flex-col p-5 grid grid-cols-4 grid-rows-6 gap-4 h-full p-10">
+          <SubUserSection
+            address={"0xZK00000000000000000000000000000"}
+            privateSection={true}
+          />
+          <SubUserSection
+            address={"0xPUBLIC0000000000000000000000000"}
+            privateSection={false}
+          />
         </div>
-        <div className="row-span-2 col-span-2 bg-zinc-100 rounded flex flex-col p-5">
-          <PublicSection />
+        <div className="row-span-2 col-span-2 bg-zinc-100 rounded flex flex-col p-5 grid grid-cols-4 grid-rows-6 gap-4 h-full p-10">
+          <SubUserSection
+            address={"0xZK00000000000000000000000000000"}
+            privateSection={true}
+          />
+          <SubUserSection
+            address={"0xPUBLIC0000000000000000000000000"}
+            privateSection={false}
+          />
         </div>
         <div className="row-span-3 col-span-4 bg-zinc-100 rounded flex flex-col p-5">
           <div className="basis-1/6 flex items-center">
