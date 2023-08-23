@@ -1,4 +1,5 @@
-import React, { useRef, HTMLProps } from "react";
+import React, { useRef, HTMLProps, useState, useEffect } from "react";
+import { getBalance } from "../services/coin";
 import ActionWithAddress from "./ActionWithAddress";
 
 interface SubUserSectionProps extends HTMLProps<HTMLInputElement> {
@@ -8,13 +9,26 @@ interface SubUserSectionProps extends HTMLProps<HTMLInputElement> {
 
 const SubUserSection = (props: SubUserSectionProps) => {
   const { address, privateSection } = props;
+  const [tokenBalance, setTokenBalance] = useState("");
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!privateSection) {
+        // only public
+        const balance = await getBalance(address);
+        setTokenBalance(balance);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   return (
     <div className="row-span-2 col-span-2 rounded flex flex-col p-1 gap-2 h-full overflow-auto">
       <div className="basis-1/12 break-words text-xs">Address: {address}</div>
       <div className="basis-5/12 flex flex-row items-stretch text-4xl gap-2">
         <div className="py-2 px-0">
-          <span>15 {privateSection ? "zkAA" : "AA"}</span>
+          <span>{privateSection ? "15 zkAA" : tokenBalance+" AA"}</span>
         </div>
         <div>
           {!privateSection && (

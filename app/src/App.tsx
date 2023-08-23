@@ -48,7 +48,7 @@ function App() {
             privateSection={true}
           />
           <SubUserSection
-            address={"0xPUBLIC0000000000000000000000000"}
+            address={process.env.REACT_APP_A_PUBLIC_KEY || ""}
             privateSection={false}
           />
         </div>
@@ -63,7 +63,7 @@ function App() {
             privateSection={true}
           />
           <SubUserSection
-            address={"0xPUBLIC0000000000000000000000000"}
+            address={process.env.REACT_APP_B_PUBLIC_KEY || ""}
             privateSection={false}
           />
         </div>
