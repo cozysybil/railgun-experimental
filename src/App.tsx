@@ -50,7 +50,7 @@ function App() {
               buttonAction={() => {
                 console.log("View transaction");
               }}
-              buttonContainerClassName="basis-1/12 bg-gradient-to-r from-pink-500 to-violet-500 text-white text-xs font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+              buttonContainerClassName="basis-1/12 bg-violet-500 text-white text-xs font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
               inputId="viewTx"
               inputPlaceHolder="Enter transaction you want to view"
               inputType="text"
