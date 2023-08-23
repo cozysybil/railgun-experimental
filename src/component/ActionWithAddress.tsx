@@ -4,6 +4,7 @@ import Input from "./Input"; // Make sure to adjust the path based on your file 
 interface ActionWithAddressProps extends HTMLProps<HTMLInputElement> {
   buttonName: string;
   buttonAction: () => void;
+  buttonContainerClassName?: string;
   inputId: string;
   inputPlaceHolder: string;
   inputType: string;
@@ -14,6 +15,7 @@ const ActionWithAddress = (props: ActionWithAddressProps) => {
   const {
     buttonName,
     buttonAction,
+    buttonContainerClassName = "basis-1/3 bg-gradient-to-r from-pink-500 to-violet-500 text-white text-xs font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline",
     inputId,
     inputPlaceHolder,
     inputType,
@@ -21,7 +23,7 @@ const ActionWithAddress = (props: ActionWithAddressProps) => {
   } = props;
 
   return (
-    <div className="flex flex-row gap-2 items-center">
+    <div className="grow flex flex-row gap-2 items-center">
       <Input
         id={inputId}
         placeholder={inputPlaceHolder}
@@ -32,7 +34,7 @@ const ActionWithAddress = (props: ActionWithAddressProps) => {
       <button
         type="submit"
         onClick={buttonAction}
-        className="basis-1/3 bg-gradient-to-r from-pink-500 to-violet-500 text-white text-xs font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+        className={buttonContainerClassName}
       >
         {buttonName}
       </button>
