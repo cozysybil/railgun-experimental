@@ -12,12 +12,34 @@ function App() {
   const [showMessage, setShowMessage] = useState(false);
   const [viewLoading, setViewLoading] = useState(false);
   const [receipt, setReceipt] = useState("Nothing to show here");
+  const [accountAddress, setAccountAddress] = useState<string | null>(null);
 
   const handleButtonClick = () => {
     setShowMessage(true);
     setTimeout(() => {
       setShowMessage(false);
     }, 2000);
+  };
+
+  useEffect(() => {
+    const fetchAccount = async () => {
+      const address = await getAccount();
+      setAccountAddress(address);
+    };
+
+    fetchAccount();
+  }, []);
+
+  const getAccount = async (): Promise<string> => {
+    try {
+      const accounts = await window.ethereum.request({
+        method: "eth_requestAccounts",
+      });
+      return accounts[0];
+    } catch (error) {
+      console.error("Error fetching Ethereum account:", error);
+      return "0";
+    }
   };
 
   const handleViewTransactionClick = async (txHash: string) => {
@@ -59,35 +81,39 @@ function App() {
         <div className="col-span-2 row-span-2 bg-zinc-100 rounded flex flex-col p-5 grid grid-cols-4 gap-4 h-full">
           <div className="row-span-2 col-span-4 text-sm grid place-items-center">
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-violet-500">
-              Account A
+              My MetaMask Account
             </span>
           </div>
           <SubUserSection
             address={"0xZK00000000000000000000000000000"}
             privateKey={""}
             privateSection={true}
+            metamask={true}
           />
           <SubUserSection
-            address={process.env.REACT_APP_A_PUBLIC_KEY || ""}
-            privateKey={process.env.REACT_APP_A_PRIVATE_KEY || ""}
+            address={accountAddress || ""}
+            privateKey={""}
             privateSection={false}
+            metamask={true}
           />
         </div>
         <div className="col-span-2 row-span-2 bg-zinc-100 rounded flex flex-col p-5 grid grid-cols-4 gap-4 h-full">
           <div className="row-span-2 col-span-4 text-sm grid place-items-center">
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-violet-500">
-              Account B
+              Alice's Account
             </span>
           </div>
           <SubUserSection
             address={"0xZK00000000000000000000000000000"}
             privateKey={""}
             privateSection={true}
+            metamask={false}
           />
           <SubUserSection
             address={process.env.REACT_APP_B_PUBLIC_KEY || ""}
             privateKey={process.env.REACT_APP_B_PRIVATE_KEY || ""}
             privateSection={false}
+            metamask={false}
           />
         </div>
         <div className="col-span-4 row-span-5 bg-zinc-100 rounded flex flex-col p-5">

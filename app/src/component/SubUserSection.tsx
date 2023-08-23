@@ -6,10 +6,11 @@ interface SubUserSectionProps extends HTMLProps<HTMLInputElement> {
   address: string;
   privateSection: boolean;
   privateKey: string;
+  metamask: boolean;
 }
 
 const SubUserSection = (props: SubUserSectionProps) => {
-  const { address, privateSection, privateKey } = props;
+  const { address, privateSection, privateKey, metamask } = props;
   const [tokenBalance, setTokenBalance] = useState("0");
   const [mintLoading, setMintLoading] = useState(false);
   const [txHash, setTxHash] = useState("");
@@ -42,7 +43,7 @@ const SubUserSection = (props: SubUserSectionProps) => {
 
   const handleTransferClick = async (to: string) => {
     try {
-      const transactionHash = await transfer(privateKey, to, "1"); // Call the mint function
+      const transactionHash = await transfer(metamask, privateKey, to, "1"); // Call the mint function
       setTxHash(transactionHash);
       // Fetch the updated balance after minting
       const balance = await getBalance(address);

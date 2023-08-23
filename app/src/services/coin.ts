@@ -342,22 +342,33 @@ export async function mint(to: string, amount: string): Promise<void> {
 
 // // Function to transfer coins
 export async function transfer(
+  metamask: boolean,
   privateKey: string,
   to: string,
   amount: string
 ): Promise<string> {
   try {
-    const provider = new ethers.JsonRpcProvider(rpc);
+    let contractWithSigner: ethers.Contract;
 
-    const wallet = new Wallet(privateKey, provider);
-    const contractWithSigner = new Contract(
-      contractAddress,
-      contractABI,
-      wallet
-    );
+    if (metamask) {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
 
+      contractWithSigner = new ethers.Contract(
+        contractAddress,
+        contractABI,
+        signer
+      );
+    } else {
+      const provider = new ethers.JsonRpcProvider(rpc);
+      const wallet = new ethers.Wallet(privateKey, provider);
+      contractWithSigner = new ethers.Contract(
+        contractAddress,
+        contractABI,
+        wallet
+      );
+    }
     const receipt = await contractWithSigner.transfer(to, amount);
-
     return receipt.hash;
   } catch (error) {
     console.error("Error fetching balance:", error);
