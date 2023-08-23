@@ -6,15 +6,34 @@ import ActionWithAddress from "./component/ActionWithAddress";
 
 // @ts-ignore
 import { ArrowPathIcon } from "@heroicons/react/24/solid";
+import { getTransactionDetails } from "./services/transaction";
 
 function App() {
   const [showMessage, setShowMessage] = useState(false);
+  const [viewLoading, setViewLoading] = useState(false);
+  const [receipt, setReceipt] = useState("Nothing to show here");
 
   const handleButtonClick = () => {
     setShowMessage(true);
     setTimeout(() => {
       setShowMessage(false);
     }, 2000);
+  };
+
+  const handleViewTransactionClick = async (txHash: string) => {
+    try {
+      setViewLoading(true);
+      const receipt = await getTransactionDetails(txHash);
+      if (receipt.length > 0) {
+        setReceipt(receipt);
+      } else {
+        setReceipt("Transaction not found");
+      }
+      setViewLoading(false);
+    } catch (error) {
+      console.error("Error view transaction:", error);
+      setViewLoading(false);
+    }
   };
 
   return (
@@ -74,8 +93,9 @@ function App() {
         <div className="col-span-4 row-span-5 bg-zinc-100 rounded flex flex-col p-5">
           <div className="basis-1/6 flex items-center">
             <ActionWithAddress
-              buttonName="View"
+              buttonName={viewLoading ? "looking ..." : "View"}
               buttonAction={(value) => {
+                handleViewTransactionClick(value);
                 console.log("View transaction: ", value);
               }}
               buttonContainerClassName="basis-1/12 bg-violet-500 text-white text-xs font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
@@ -86,7 +106,13 @@ function App() {
             />
           </div>
           <div className="basis-5/6 mt-4 bg-gray-200 p-4 rounded overflow-auto">
-            <p className="text-gray-400">Nothing to show here</p>
+            {receipt === "Nothing to show here" ? (
+              <p className="text-gray-400">{receipt}</p>
+            ) : (
+              <pre className="bg-gray-100 p-4 rounded">
+                {JSON.stringify(JSON.parse(receipt), null, 2)}
+              </pre>
+            )}
           </div>
         </div>
       </div>
