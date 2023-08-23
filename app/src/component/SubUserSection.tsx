@@ -1,16 +1,17 @@
 import React, { useRef, HTMLProps, useState, useEffect } from "react";
-import { getBalance, mint } from "../services/coin";
+import { getBalance, mint, transfer } from "../services/coin";
 import ActionWithAddress from "./ActionWithAddress";
 
 interface SubUserSectionProps extends HTMLProps<HTMLInputElement> {
   address: string;
   privateSection: boolean;
+  privateKey: string;
 }
 
 const SubUserSection = (props: SubUserSectionProps) => {
-  const { address, privateSection } = props;
+  const { address, privateSection, privateKey } = props;
   const [tokenBalance, setTokenBalance] = useState("0");
-  const [loading, setLoading] = useState(false);
+  const [mintLoading, setMintLoading] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -26,15 +27,27 @@ const SubUserSection = (props: SubUserSectionProps) => {
 
   const handleMintClick = async () => {
     try {
-      setLoading(true);
+      setMintLoading(true);
       await mint(address, "10"); // Call the mint function
-      setLoading(false);
+      setMintLoading(false);
       // Fetch the updated balance after minting
       const balance = await getBalance(address);
       setTokenBalance(balance);
     } catch (error) {
       console.error("Error minting tokens:", error);
-      setLoading(false);
+      setMintLoading(false);
+    }
+  };
+
+  const handleTransferClick = async (to: string) => {
+    try {
+      await transfer(privateKey, to, "1"); // Call the mint function
+      // Fetch the updated balance after minting
+      const balance = await getBalance(address);
+      setTokenBalance(balance);
+    } catch (error) {
+      console.error("Error minting tokens:", error);
+      setMintLoading(false);
     }
   };
 
@@ -51,9 +64,9 @@ const SubUserSection = (props: SubUserSectionProps) => {
               type="submit"
               className="bg-violet-500 text-white text-sm font-bold py-1 px-2 rounded-full focus:outline-none focus:shadow-outline"
               onClick={handleMintClick}
-              disabled={loading}
+              disabled={mintLoading}
             >
-              {loading ? "Minting..." : "+ request tokens"}
+              {mintLoading ? "Minting..." : "+ request tokens"}
             </button>
           )}
         </div>
@@ -92,6 +105,7 @@ const SubUserSection = (props: SubUserSectionProps) => {
                   console.log("Private send to:", value);
                 }
               : (value) => {
+                  handleTransferClick(value);
                   console.log("Public send to:", value);
                 }
           }

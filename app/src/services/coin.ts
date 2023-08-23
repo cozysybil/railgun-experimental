@@ -1,4 +1,4 @@
-import { ethers, Contract } from "ethers";
+import { ethers, Contract, Wallet } from "ethers";
 
 // Define the contract address and ABI
 const contractAddress = process.env.REACT_APP_COIN_ADDRESS || "";
@@ -332,20 +332,20 @@ export async function getBalance(address: string): Promise<string> {
 export async function mint(to: string, amount: string): Promise<void> {
   // Assuming the contract method name is "mint"
   const signer = await provider.getSigner();
-  const contractWithSigner = new Contract(
-    contractAddress,
-    contractABI,
-    signer
-  );
+  const contractWithSigner = new Contract(contractAddress, contractABI, signer);
 
   await contractWithSigner.mint(to, amount);
 }
 
 // // Function to transfer coins
-// export async function transfer(to: string, amount: string): Promise<void> {
-//   // Assuming the contract method name is "transfer"
-//   const signer = provider.getSigner();
-//   const contractWithSigner = coinContract.connect(signer);
+export async function transfer(
+  privateKey: string,
+  to: string,
+  amount: string
+): Promise<void> {
+  // Assuming the contract method name is "mint"
+  const wallet = new Wallet(privateKey, provider);
+  const contractWithSigner = new Contract(contractAddress, contractABI, wallet);
 
-//   await contractWithSigner.transfer(to, amount);
-// }
+  await contractWithSigner.transfer(to, amount);
+}
