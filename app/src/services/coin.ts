@@ -300,14 +300,6 @@ const contractABI = [
 
 // Create a provider to connect to the Ethereum network
 const rpc = process.env.REACT_APP_RPC_URL || "";
-const provider = new ethers.JsonRpcProvider(rpc);
-
-// Connect to the contract
-const coinContract = new ethers.Contract(
-  contractAddress,
-  contractABI,
-  provider
-);
 
 // Function to get balance
 export async function getBalance(address: string): Promise<string> {
@@ -319,6 +311,15 @@ export async function getBalance(address: string): Promise<string> {
     return "0";
   }
   try {
+    const provider = new ethers.JsonRpcProvider(rpc);
+
+    // Connect to the contract
+    const coinContract = new ethers.Contract(
+      contractAddress,
+      contractABI,
+      provider
+    );
+
     const balance = await coinContract.balanceOf(address);
     console.log("Balance:", balance.toString());
     return balance.toString();
@@ -328,9 +329,11 @@ export async function getBalance(address: string): Promise<string> {
   }
 }
 
-// Function to transfer coins
+// Function to mint coins
 export async function mint(to: string, amount: string): Promise<void> {
   // Assuming the contract method name is "mint"
+  const provider = new ethers.JsonRpcProvider(rpc);
+
   const signer = await provider.getSigner();
   const contractWithSigner = new Contract(contractAddress, contractABI, signer);
 
@@ -344,6 +347,8 @@ export async function transfer(
   amount: string
 ): Promise<string> {
   try {
+    const provider = new ethers.JsonRpcProvider(rpc);
+
     const wallet = new Wallet(privateKey, provider);
     const contractWithSigner = new Contract(
       contractAddress,
