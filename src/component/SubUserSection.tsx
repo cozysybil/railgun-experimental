@@ -25,7 +25,7 @@ const SubUserSection = (props: SubUserSectionProps) => {
               }}
               className="bg-violet-500 text-white text-sm font-bold py-1 px-2 rounded-full focus:outline-none focus:shadow-outline"
             >
-              + request token
+              + request tokens
             </button>
           )}
         </div>
