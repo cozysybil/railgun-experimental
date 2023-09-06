@@ -311,8 +311,9 @@ export async function getBalance(address: string): Promise<string> {
     return "0";
   }
   try {
-    const provider = new ethers.providers.JsonRpcProvider(rpc);
-    const signer = provider.getSigner();
+    const provider = new ethers.JsonRpcProvider(rpc);
+    // const provider = new ethers.providers.JsonRpcProvider(rpc);
+    const signer = await provider.getSigner();
     // Connect to the contract
     const contractWithSigner = new ethers.Contract(
       contractAddress,
@@ -321,7 +322,7 @@ export async function getBalance(address: string): Promise<string> {
     );
     const balance = await contractWithSigner.balanceOf(address);
     console.log("Balance:", balance.toString());
-    return ethers.utils.formatUnits(balance, 18);
+    return ethers.formatEther(balance);
   } catch (error) {
     console.error("Error fetching balance:", error);
     return "0";
@@ -331,15 +332,15 @@ export async function getBalance(address: string): Promise<string> {
 // Function to mint coins
 export async function mint(to: string, amount: string): Promise<void> {
   // Assuming the contract method name is "mint"
-  const provider = new ethers.providers.JsonRpcProvider(rpc);
-  const signer = provider.getSigner();
+    const provider = new ethers.JsonRpcProvider(rpc);
+  const signer = await provider.getSigner();
   const contractWithSigner = new ethers.Contract(
     contractAddress,
     contractABI,
     signer
   );
 
-  await contractWithSigner.mint(to, ethers.utils.parseUnits(amount, 18));
+  await contractWithSigner.mint(to, ethers.parseUnits(amount, 18));
 }
 
 // // Function to transfer coins
@@ -353,16 +354,16 @@ export async function transfer(
     let contractWithSigner: ethers.Contract;
 
     if (metamask) {
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const provider = new ethers.BrowserProvider(window.ethereum)
       await provider.send("eth_requestAccounts", []);
-      const signer = provider.getSigner();
+      const signer = await provider.getSigner();
       contractWithSigner = new ethers.Contract(
         contractAddress,
         contractABI,
         signer
       );
     } else {
-      const provider = new ethers.providers.JsonRpcProvider(rpc);
+      const provider = new ethers.JsonRpcProvider(rpc);
       const signer = new ethers.Wallet(privateKey, provider);
       contractWithSigner = new ethers.Contract(
         contractAddress,
@@ -372,7 +373,7 @@ export async function transfer(
     }
     const receipt = await contractWithSigner.transfer(
       to,
-      ethers.utils.parseUnits(amount, 18)
+      ethers.parseUnits(amount, 18)
     );
     return receipt.hash;
   } catch (error) {
