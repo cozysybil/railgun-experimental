@@ -1,4 +1,4 @@
-export const railgunABI = [
+const railgunABI = [
   {
     anonymous: false,
     inputs: [
@@ -2481,3 +2481,5 @@ export const railgunABI = [
     type: "function",
   },
 ];
+
+module.exports = { railgunABI };
