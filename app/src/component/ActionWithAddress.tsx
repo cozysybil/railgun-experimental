@@ -5,6 +5,7 @@ interface ActionWithAddressProps extends HTMLProps<HTMLInputElement> {
   buttonName: string;
   buttonAction: (inputValue: string) => void;
   buttonContainerClassName?: string;
+  buttonDisabled: boolean;
   inputId: string;
   inputPlaceHolder: string;
   inputType: string;
@@ -16,6 +17,7 @@ const ActionWithAddress = (props: ActionWithAddressProps) => {
     buttonName,
     buttonAction,
     buttonContainerClassName = "basis-1/3 bg-gradient-to-r from-pink-500 to-violet-500 text-white text-xs font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline",
+    buttonDisabled = false,
     inputId,
     inputPlaceHolder,
     inputType,
@@ -43,7 +45,7 @@ const ActionWithAddress = (props: ActionWithAddressProps) => {
         value={inputValue}
         onChange={handleInputChange}
       />
-      <button onClick={handleButtonClick} className={buttonContainerClassName}>
+      <button disabled={buttonDisabled} onClick={handleButtonClick} className={buttonContainerClassName}>
         {buttonName}
       </button>
     </div>
