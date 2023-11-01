@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { ethers } from "ethers";
 import Input from "./component/Input";
 import "./App.css";
 import SubUserSection from "./component/SubUserSection";
@@ -6,6 +7,7 @@ import ActionWithAddress from "./component/ActionWithAddress";
 
 // @ts-ignore
 import { ArrowPathIcon } from "@heroicons/react/24/solid";
+import io from "socket.io-client";
 import { getTransactionDetails } from "./services/transaction";
 import {
   getWallet1PrivateAdress,
@@ -15,22 +17,31 @@ import {
 import { getBalance } from "./services/coin";
 
 interface Wallet {
-  spendingAddress: string;
-  viewingAddress: string;
-  // Other properties of the wallet object
+  railgunAddress: string;
+  id: string;
 }
 
-const RALGUN_CONTRACT = "0x3aC005eCF84B510fd3Ff37133c1a641Cd79879b5";
-const TREASURY = "0xEd83FCB503e5b7309ACB8dfD39CaeaEc86a8d164"
+const RALGUN_CONTRACT = "0x610178dA211FEF7D417bC0e6FeD39F05609AD788";
+const TREASURY = "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318";
 
 function App() {
   const [showMessage, setShowMessage] = useState(false);
   const [viewLoading, setViewLoading] = useState(false);
   const [receipt, setReceipt] = useState("Nothing to show here");
   const [accountAddress, setAccountAddress] = useState<string | null>(null);
-  const [private1, setPrivate1] = useState<Wallet | null>(null);
-  const [private2, setPrivate2] = useState<Wallet | null>(null);
+  const [private1, setPrivate1] = useState<Wallet | null>({
+    railgunAddress:
+      "0zk1qyk9nn28x0u3rwn5pknglda68wrn7gw6anjw8gg94mcj6eq5u48tlrv7j6fe3z53lama02nutwtcqc979wnce0qwly4y7w4rls5cq040g7z8eagshxrw5ajy990",
+    id: "bee63912e0e4cfa6830ebc8342d3efa9aa1336548c77bf4336c54c17409f2990",
+  });
+  const [private2, setPrivate2] = useState<Wallet | null>({
+    railgunAddress:
+      "0zk1qys03pzsamp83ym7856e80jwhey8zs2rxged0pn2g0crnq2wssh6hrv7j6fe3z53llcgr39fw4erjaf8ju69ymydafwmxlgpj25kynejdepgggu8eu94kwsrufh",
+    id: "253d960f17ab921d024bf4980c6ff1dfa87a1d36d97f1208712262d36acb33bc",
+  });
   const [BobAABalance, setBobAABalance] = useState("0");
+  const [BobZkBalance, setBobZkBalance] = useState("0");
+  const [zkBalance, setZkBalance] = useState("0");
   const [poolBalance, setPoolBalance] = useState("0");
   const [trasuryBalance, setTreasuryBalance] = useState("0");
   const [componentsUpdate, setComponentsUpdate] = useState(false);
@@ -60,14 +71,10 @@ function App() {
       );
       setBobAABalance(balance);
 
-      const poolBalance = await getBalance(
-        RALGUN_CONTRACT
-      );
+      const poolBalance = await getBalance(RALGUN_CONTRACT);
       setPoolBalance(poolBalance);
 
-      const trasuryBalance = await getBalance(
-        TREASURY
-      );
+      const trasuryBalance = await getBalance(TREASURY);
       setTreasuryBalance(trasuryBalance);
 
       setShowMessage(false);
@@ -95,14 +102,10 @@ function App() {
       );
       setBobAABalance(balance);
 
-      const poolBalance = await getBalance(
-        RALGUN_CONTRACT
-      );
+      const poolBalance = await getBalance(RALGUN_CONTRACT);
       setPoolBalance(poolBalance);
 
-      const trasuryBalance = await getBalance(
-        TREASURY
-      );
+      const trasuryBalance = await getBalance(TREASURY);
       setTreasuryBalance(trasuryBalance);
 
       setShowMessage(false);
@@ -117,6 +120,50 @@ function App() {
   useEffect(() => {
     testLogic();
   }, []);
+
+  useEffect(() => {
+    // connect to WebSocket server
+    const newSocket = io("http://localhost:3012", {
+      transports: ["websocket"],
+    });
+
+    // set up event listeners for incoming messages
+    newSocket.on("connect", () => console.log("Connected to WebSocket"));
+    newSocket.on("disconnect", () =>
+      console.log("Disconnected from WebSocket")
+    );
+    newSocket.on("newBalanceForYouKa", (data) => {
+      console.log("new data arrived");
+      console.log("event id:" + data?.railgunWalletID);
+      console.log("event amount:" + data?.erc20Amounts[0]?.amount);
+      console.log("private2 id:" + private2?.id);
+      console.log("private1 id:" + private1?.id);
+
+      if (data?.railgunWalletID === private2?.id) {
+        const newBalance = ethers.utils.formatEther(
+          data?.erc20Amounts[0]?.amount
+        );
+        setBobZkBalance(newBalance);
+      }
+      if (data?.railgunWalletID === private1?.id) {
+        console.log("set private 1 balance", private1?.id);
+
+        const newBalance = ethers.utils.formatEther(
+          data?.erc20Amounts[0]?.amount
+        );
+        setZkBalance(newBalance);
+      }
+    });
+
+    // clean up on unmount
+    // return () => {
+    //   newSocket.disconnect();
+    // };
+  }, []);
+
+  useEffect(() => {
+    console.log({ zkBalance });
+  }, [zkBalance]);
 
   const getAccount = async (): Promise<string> => {
     try {
@@ -174,9 +221,13 @@ function App() {
           </div>
           {accountAddress && (
             <SubUserSection
-              privateAddress={private1?.spendingAddress || ""}
+              privateAddress={private1?.railgunAddress || ""}
               publicAddress={accountAddress || ""}
+              id={private1?.id || ""}
+              toPrivateBob={private2?.railgunAddress || ""}
+              zkBalance={zkBalance}
               setComponentsUpdate={setComponentsUpdate}
+              setShowMessage={setShowMessage}
             />
           )}
         </div>
@@ -188,11 +239,11 @@ function App() {
           </div>
           <div className="row-span-2 col-span-2 rounded flex flex-col p-1 gap-1 h-full overflow-auto">
             <div className="basis-1/12 break-words text-xs">
-              Private Wallet: {private2?.spendingAddress || ""}
+              Private Wallet: {private2?.railgunAddress || ""}
             </div>
             <div className="basis-3/12 flex flex-row items-stretch text-4xl gap-1">
               <div className="py-2 px-0">
-                <span>{"0 zkAA"}</span>
+                <span>{BobZkBalance + " zkAA"}</span>
               </div>
             </div>
           </div>
@@ -215,7 +266,7 @@ function App() {
           </div>
           <div className="row-span-4 col-span-4 rounded flex flex-col p-1 gap-2 h-full overflow-auto">
             <div className="basis-2/12 break-words text-xs ">
-              Contract address: {process.env.REACT_APP_RAILGUN_LOGIC}
+              Contract address: {RALGUN_CONTRACT}
             </div>
             <div className="basis-10/12 flex flex-row items-stretch text-4xl gap-2">
               <div className="py-2 px-0">

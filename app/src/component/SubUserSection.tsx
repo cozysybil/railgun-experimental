@@ -1,18 +1,29 @@
 import React, { useRef, HTMLProps, useState, useEffect } from "react";
 import { getBalance, mint, transfer } from "../services/coin";
-import { getZkBalance, shield } from "../services/railgun";
+import { privateTransfer, shield, unshield } from "../services/railgun";
 import ActionWithAddress from "./ActionWithAddress";
 
 interface SubUserSectionProps extends HTMLProps<HTMLInputElement> {
   privateAddress: string;
   publicAddress: string;
+  id: string;
+  toPrivateBob: string;
+  zkBalance: string;
   setComponentsUpdate: React.Dispatch<React.SetStateAction<boolean>>;
+  setShowMessage: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const SubUserSection = (props: SubUserSectionProps) => {
-  const { privateAddress, publicAddress, setComponentsUpdate } = props;
+  const {
+    privateAddress,
+    publicAddress,
+    id,
+    toPrivateBob,
+    zkBalance,
+    setComponentsUpdate,
+    setShowMessage,
+  } = props;
   const [aaBalance, setAaBalance] = useState("0");
-  const [zkBalance, setZkBalance] = useState("0");
   const [mintLoading, setMintLoading] = useState(false);
   const [txHash, setTxHash] = useState("");
 
@@ -21,12 +32,36 @@ const SubUserSection = (props: SubUserSectionProps) => {
       const balance = await getBalance(publicAddress);
       console.log({ balance });
       setAaBalance(balance);
-      const zkBalance = await getZkBalance();
-      setZkBalance(zkBalance.newBalance);
     };
 
     fetchData();
   }, []);
+
+  const handleUnShieldClick = async (amount: string) => {
+    try {
+      setShowMessage(true);
+      const response = await unshield(amount, id);
+      setTxHash(response.transactionHash);
+      const balance = await getBalance(publicAddress);
+      setAaBalance(balance);
+      setComponentsUpdate(true);
+    } catch (error) {
+      console.error("Error shield tokens:", error);
+    }
+  };
+
+  const handlePrivateTransferClick = async (amount: string) => {
+    try {
+      setShowMessage(true);
+      const response = await privateTransfer(amount, id, toPrivateBob);
+      setTxHash(response.transactionHash);
+      const balance = await getBalance(publicAddress);
+      setAaBalance(balance);
+      setComponentsUpdate(true);
+    } catch (error) {
+      console.error("Error shield tokens:", error);
+    }
+  };
 
   const handleMintClick = async () => {
     try {
@@ -44,6 +79,7 @@ const SubUserSection = (props: SubUserSectionProps) => {
 
   const handleTransferClick = async (amount: string) => {
     try {
+      setShowMessage(true);
       const transactionHash = await transfer(
         true,
         "",
@@ -54,7 +90,7 @@ const SubUserSection = (props: SubUserSectionProps) => {
       // Fetch the updated balance after minting
       const balance = await getBalance(publicAddress);
       setAaBalance(balance);
-      setComponentsUpdate(true)
+      setComponentsUpdate(true);
     } catch (error) {
       console.error("Error transfer tokens:", error);
     }
@@ -62,12 +98,12 @@ const SubUserSection = (props: SubUserSectionProps) => {
 
   const handleShieldClick = async (amount: string) => {
     try {
-      const response = await shield(amount);
+      setShowMessage(true);
+      const response = await shield(amount, privateAddress);
       setTxHash(response.transactionHash);
-      setZkBalance(response.newBalance);
       const balance = await getBalance(publicAddress);
       setAaBalance(balance);
-      setComponentsUpdate(true)
+      setComponentsUpdate(true);
     } catch (error) {
       console.error("Error shield tokens:", error);
     }
@@ -89,13 +125,14 @@ const SubUserSection = (props: SubUserSectionProps) => {
           <ActionWithAddress
             buttonName={"Unshield to Public Wallet"}
             buttonAction={(value) => {
-              console.log("Unshield to:", value);
+              handleUnShieldClick(value);
+              console.log("unshield", value);
             }}
             buttonContainerClassName={
-              // ? "basis-2/3 bg-gradient-to-r from-pink-500 to-violet-500 text-white text-xs font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-              "basis-2/3 bg-gray-300 text-white text-xs font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+              "basis-2/3 bg-gradient-to-r from-pink-500 to-violet-500 text-white text-xs font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+              // "basis-2/3 bg-gray-300 text-white text-xs font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
             }
-            buttonDisabled={true}
+            buttonDisabled={false}
             inputId={"unshieldTo"}
             inputPlaceHolder={"Unshield amount"}
             inputType="text"
@@ -106,22 +143,20 @@ const SubUserSection = (props: SubUserSectionProps) => {
           <ActionWithAddress
             buttonName={"Send zkAA to Bob privately"}
             buttonAction={(value) => {
-              console.log("Private send to:", value);
+              handlePrivateTransferClick(value)
+              console.log("Private send:", value);
             }}
             buttonContainerClassName={
-              // ? "basis-2/3 bg-gradient-to-r from-pink-500 to-violet-500 text-white text-xs font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-              "basis-2/3 bg-gray-300 text-white text-xs font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+              "basis-2/3 bg-gradient-to-r from-pink-500 to-violet-500 text-white text-xs font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+              // "basis-2/3 bg-gray-300 text-white text-xs font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
             }
-            buttonDisabled={true}
+            buttonDisabled={false}
             inputId={"privateSendTo"}
             inputPlaceHolder="amount"
             inputType="text"
             inputContainerClassName="grow"
           />
         </div>
-        {/* {txHash.length > 0 && (
-          <div className="break-words text-xs">{txHash}</div>
-        )} */}
       </div>
       <div className="row-span-2 col-span-2 rounded flex flex-col p-1 gap-2 h-full overflow-auto">
         <div className="basis-1/12 break-words text-xs">
@@ -174,10 +209,12 @@ const SubUserSection = (props: SubUserSectionProps) => {
             inputContainerClassName="grow"
           />
         </div>
-        {txHash.length > 0 && (
-          <div className="break-words text-xs">{txHash}</div>
-        )}
       </div>
+      {txHash.length > 0 && (
+        <div className="row-span-1 col-span-4 rounded flex flex-col justify-center items-center p-1 gap-2 h-full overflow-auto break-words text-xs">
+          {txHash}
+        </div>
+      )}
     </>
   );
 };
