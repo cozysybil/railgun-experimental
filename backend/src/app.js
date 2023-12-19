@@ -227,7 +227,7 @@ app.post("/api/v2/unshield", async (req, res) => {
   // amountInDecimal = "3.0", "1.5", ... -> amountInHex = "0xDE0B6B3A7640000"
   const amountInHex = decimalStrToHeximalStr(amountInDecimal);
   const provider = new JsonRpcProvider("http://127.0.0.1:8545/");
-  const walletSigner = new Wallet(config.privateKey, provider);
+  const walletSigner = new Wallet(config.relayerPrivateKey, provider);
 
   const erc20AmountRecipients2 = [
     {
@@ -293,7 +293,7 @@ app.post("/api/v2/unshield", async (req, res) => {
     unshieldGasDetails
   );
   // Public wallet to send from.
-  unshieldTransaction.from = config.public;
+  unshieldTransaction.from = config.relayerPublic;
   // console.debug(unshieldTransaction) // send it through relayer, or send it yourself
   const unshieldTxReceipt = await walletSigner.sendTransaction(
     unshieldTransaction
@@ -311,7 +311,7 @@ app.post("/api/v2/transfer", async (req, res) => {
   // amountInDecimal = "3.0", "1.5", ... -> amountInHex = "0xDE0B6B3A7640000"
   const amountInHex = decimalStrToHeximalStr(amountInDecimal);
   const provider = new JsonRpcProvider("http://127.0.0.1:8545/");
-  const walletSigner = new Wallet(config.privateKey, provider);
+  const walletSigner = new Wallet(config.relayerPrivateKey, provider);
 
   // Optional encrypted memo text only readable by the sender and receiver.
   // May include text and emojis. See "Private Transfers" page for details.
@@ -390,7 +390,7 @@ app.post("/api/v2/transfer", async (req, res) => {
     transferGasDetails
   );
   // Public wallet to send from.
-  transferTransaction.from = config.public;
+  transferTransaction.from = config.relayerPublic;
   // console.debug(unshieldTransaction) // send it through relayer, or send it yourself
   const transferTxReceipt = await walletSigner.sendTransaction(
     transferTransaction
@@ -408,9 +408,12 @@ let config = {
   mnemonic: "test test test test test test test test test test test junk",
   encryptionKey:
     "0101010101010101010101010101010101010101010101010101010101010101", // Database encryption key. Keep this very safe.
-  public: "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+  public: "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", // hardhat public key for testing
   privateKey:
-    "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d",
+    "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d", // hardhat private key for testing
+  relayerPublic: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266", // hardhat public key for testing
+  relayerPrivateKey:
+    "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80", // hardhat private key for testing
   contracts: {
     delegator: "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
     governorRewardsImplementation: "",
