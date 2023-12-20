@@ -157,6 +157,7 @@ export async function getZkBalance(): Promise<NewBalance> {
     newBalance: "",
   };
 }
+
 export async function testLogic(): Promise<string> {
   try {
     // const provider = new ethers.providers.JsonRpcProvider(rpc);
@@ -205,50 +206,37 @@ export async function testLogic(): Promise<string> {
   }
 }
 
-export async function testSwap(): Promise<string> {
+// sell, amount, buy, id
+export async function swap(
+  sell: Currency,
+  buy: Currency,
+  amount: string,
+  id: string,
+  zkWallet: string
+): Promise<ShieldResponse> {
+  console.log("===========================");
+  console.log(sell);
+  console.log(buy);
+  console.log(amount);
+  console.log(id);
+  console.log("===========================");
+
   try {
-    // const provider = new ethers.providers.JsonRpcProvider(rpc);
-    // const signer = new ethers.Wallet(snarkBypassSigner, provider);
-    // const contractWithSnarkBtpassSigner = new ethers.Contract(
-    //   contractAddress,
-    //   contractABI,
-    //   signer
-    // );
+    const response = await axios.post("http://localhost:3010/api/V2/swap", {
+      sell,
+      buy,
+      amount,
+      id,
+      zkWallet,
+    });
 
-    // const merkletree = await MerkleTree.createTree();
-    // const checkLastEventBlock =
-    //   await contractWithSnarkBtpassSigner.lastEventBlock();
-
-    // console.log({ checkLastEventBlock });
-
-    //   let contractWithSigner: ethers.Contract;
-
-    //   if (metamask) {
-    //     const provider = new ethers.providers.Web3Provider(window.ethereum);
-    //     await provider.send("eth_requestAccounts", []);
-    //     const signer = provider.getSigner();
-    //     contractWithSigner = new ethers.Contract(
-    //       contractAddress,
-    //       contractABI,
-    //       signer
-    //     );
-    //   } else {
-    //     const provider = new ethers.providers.JsonRpcProvider(rpc);
-    //     const signer = new ethers.Wallet(privateKey, provider);
-    //     contractWithSigner = new ethers.Contract(
-    //       contractAddress,
-    //       contractABI,
-    //       signer
-    //     );
-    //   }
-    //   const receipt = await contractWithSigner.transfer(
-    //     to,
-    //     ethers.utils.parseUnits(amount, 18)
-    //   );
-    //   return receipt.hash;
-    return "Hi";
+    return {
+      transactionHash: response?.data?.transactionHash,
+    };
   } catch (error) {
     console.error("Error from test swap:", error);
-    return "Transaction failed";
+    return {
+      transactionHash: "",
+    };
   }
 }

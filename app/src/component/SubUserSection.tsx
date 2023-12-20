@@ -17,8 +17,10 @@ interface SubUserSectionProps extends HTMLProps<HTMLInputElement> {
   toPrivateBob: string;
   zkBalance: string;
   zkBBBalance: string;
+  txHash: string;
   setComponentsUpdate: React.Dispatch<React.SetStateAction<boolean>>;
   setShowMessage: React.Dispatch<React.SetStateAction<boolean>>;
+  setTxHash: React.Dispatch<React.SetStateAction<string>>;
 }
 
 const SubUserSection = (props: SubUserSectionProps) => {
@@ -29,8 +31,10 @@ const SubUserSection = (props: SubUserSectionProps) => {
     toPrivateBob,
     zkBalance,
     zkBBBalance,
+    txHash,
     setComponentsUpdate,
     setShowMessage,
+    setTxHash,
   } = props;
   const [aaBalance, setAaBalance] = useState("0");
   const [bbBalance, setBbBalance] = useState("0");
@@ -47,7 +51,6 @@ const SubUserSection = (props: SubUserSectionProps) => {
   const [unshieldValue, setUnshieldValue] = useState("");
   const [unshieldCurrency, setUnshieldCurrency] = useState(Currency.AA);
   const [mintLoading, setMintLoading] = useState(false);
-  const [txHash, setTxHash] = useState("");
 
   useEffect(() => {
     const fetchData = async () => {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { ChangeEvent, useEffect, useState } from "react";
 import { ethers } from "ethers";
 import Input from "./component/Input";
 import "./App.css";
@@ -12,9 +12,11 @@ import { getTransactionDetails } from "./services/transaction";
 import {
   getWallet1PrivateAdress,
   getWallet2PrivateAdress,
+  swap,
   testLogic,
 } from "./services/railgun";
 import { Currency, getBalance } from "./services/coin";
+import { formatEther, parseEther, parseUnits } from "ethers/lib/utils";
 
 interface Wallet {
   railgunAddress: string;
@@ -50,6 +52,12 @@ function App() {
   const [trasuryAABalance, setTreasuryAABalance] = useState("0");
   const [trasuryBBBalance, setTreasuryBBBalance] = useState("0");
   const [componentsUpdate, setComponentsUpdate] = useState(false);
+  const [showModal, setShowModal] = React.useState(false);
+  const [swapCurrency, setSwapCurrency] = React.useState(Currency.AA);
+  const [swapValue, setSwapValue] = React.useState("");
+  const [swapBuyValue, setSwapBuyValue] = React.useState("");
+  const [txHash, setTxHash] = useState("");
+  const [isSwapping, setIsSwapping] = useState(false);
 
   const handleButtonClick = () => {
     setShowMessage(true);
@@ -145,13 +153,6 @@ function App() {
   }, [componentsUpdate]);
 
   useEffect(() => {
-    console.log("=========================");
-    console.log(zkAABalance);
-    console.log(zkBBBalance);
-    console.log("=========================");
-  }, [zkAABalance, zkBBBalance]);
-
-  useEffect(() => {
     // connect to WebSocket server
     const newSocket = io("http://localhost:3012", {
       transports: ["websocket"],
@@ -244,6 +245,21 @@ function App() {
     }
   };
 
+  const handleSwapCurrency = (event: any) => {
+    setSwapCurrency(event.target.value);
+  };
+
+  const handleSwapInputChange = (event: ChangeEvent<HTMLInputElement>) => {
+    setSwapValue(event.target.value);
+
+    const allFee = 0.99500625;
+    const inputValue = parseFloat(event.target.value); // Convert to wei
+
+    const someHowBugOrSomethingElse = allFee * inputValue;
+
+    setSwapBuyValue(someHowBugOrSomethingElse.toString()); // TODO: cause of rate 1:1
+  };
+
   return (
     <div className="w-full h-screen bg-slate-900">
       <div className="grid grid-cols-6 grid-rows-6 gap-4 h-full p-5 pt-10">
@@ -254,6 +270,136 @@ function App() {
         >
           <ArrowPathIcon className="w-4 h-4 mr-1" /> Refresh
         </button>
+        <button
+          type="submit"
+          onClick={() => setShowModal(true)}
+          className="absolute top-1 right-40 bg-violet-500 text-white text-sm font-bold py-1 px-3 rounded-full flex items-center"
+        >
+          SWAP
+        </button>
+        {showModal && (
+          <>
+            <div className="justify-center items-center flex overflow-x-hidden overflow-y-auto fixed inset-0 z-50 outline-none focus:outline-none">
+              <div className="relative w-auto my-6 mx-auto max-w-3xl">
+                {/*content*/}
+                <div className="border-0 rounded-lg shadow-lg relative flex flex-col w-full bg-stone-200 outline-none focus:outline-none">
+                  {/*header*/}
+                  <div className="flex items-start justify-between p-5 border-b border-solid border-blueGray-200 rounded-t">
+                    <h3 className="text-xl font-semibold">
+                      Simple swap contract call
+                    </h3>
+                    <button
+                      className="p-1 ml-auto bg-transparent border-0 text-black float-right text-3xl opacity-5 h-6 w-6 leading-none font-semibold outline-none focus:outline-none"
+                      onClick={() => setShowModal(false)}
+                    >
+                      x
+                    </button>
+                  </div>
+                  {/*body*/}
+                  <div className="relative p-6 flex-auto">
+                    <div className="flex items-start gap-2 p-2">
+                      <p className="text-blueGray-500 text-lg leading-relaxed">
+                        Pay with
+                      </p>
+                      <div className="flex flex-col">
+                        <select
+                          className="basis-1/6 text-sm py-2 px-4 rounded"
+                          onChange={handleSwapCurrency}
+                        >
+                          <option value={Currency.AA}>{"zkAA"}</option>
+                          <option value={Currency.BB}>{"zkBB"}</option>
+                        </select>
+                        <p className="text-blueGray-500 text-sm leading-relaxed">
+                          Balance:{" "}
+                          {swapCurrency === Currency.AA
+                            ? zkAABalance + " zkAA"
+                            : zkBBBalance + " zkBB"}
+                        </p>
+                      </div>
+                      <Input
+                        id={"Swap"}
+                        placeholder={"Sell amount"}
+                        type={"text"}
+                        containerClassName={"grow"}
+                        required
+                        value={swapValue}
+                        onChange={handleSwapInputChange}
+                      />
+                    </div>
+                    <div className="flex items-start gap-2 p-2">
+                      <p className="text-blueGray-500 text-lg leading-relaxed">
+                        You recieve
+                      </p>
+                      <div className="flex flex-col">
+                        <select
+                          className="basis-1/6 text-sm py-2 px-4 rounded"
+                          onChange={() => {}}
+                          disabled={true}
+                        >
+                          <option value={Currency.AA}>
+                            {swapCurrency === Currency.AA ? "zkBB" : "zkAA"}
+                          </option>
+                          {/* <option value={Currency.BB}>{"zkBB"}</option> */}
+                        </select>
+                        <p className="text-blueGray-500 text-sm leading-relaxed">
+                          Balance:{" "}
+                          {swapCurrency === Currency.AA
+                            ? zkBBBalance + " zkBB"
+                            : zkAABalance + " zkAA"}
+                        </p>
+                      </div>
+                      <Input
+                        id={"SwapBuy"}
+                        placeholder={"Buy amount"}
+                        type={"text"}
+                        containerClassName={"grow"}
+                        required
+                        value={swapBuyValue}
+                        onChange={() => {}}
+                        disabled={true}
+                      />
+                    </div>
+                  </div>
+                  {/*footer*/}
+                  <div className="flex items-center justify-center p-6 border-t border-solid border-blueGray-200 rounded-b">
+                    <button
+                      className="text-red-500 background-transparent font-bold uppercase px-6 py-2 text-sm outline-none focus:outline-none mr-1 mb-1 ease-linear transition-all duration-150"
+                      type="button"
+                      onClick={() => setShowModal(false)}
+                    >
+                      Close
+                    </button>
+                    <button
+                      className={isSwapping? "bg-slate-500 text-white active:bg-emerald-600 font-bold uppercase text-sm px-6 py-3 rounded shadow hover:shadow-lg outline-none focus:outline-none mr-1 mb-1 ease-linear transition-all duration-150":"bg-emerald-500 text-white active:bg-emerald-600 font-bold uppercase text-sm px-6 py-3 rounded shadow hover:shadow-lg outline-none focus:outline-none mr-1 mb-1 ease-linear transition-all duration-150"}
+                      type="button"
+                      disabled={isSwapping}
+                      onClick={async () => {
+                        setIsSwapping(true);
+                        const receipt = await swap(
+                          swapCurrency,
+                          swapCurrency === Currency.AA
+                            ? Currency.BB
+                            : Currency.AA,
+                          swapValue,
+                          private1?.id ||
+                            "bee63912e0e4cfa6830ebc8342d3efa9aa1336548c77bf4336c54c17409f2990",
+                          private1?.railgunAddress ||
+                            "0zk1qyk9nn28x0u3rwn5pknglda68wrn7gw6anjw8gg94mcj6eq5u48tlrv7j6fe3z53lama02nutwtcqc979wnce0qwly4y7w4rls5cq040g7z8eagshxrw5ajy990"
+                        );
+                        setTxHash(receipt.transactionHash);
+                        setComponentsUpdate(true);
+                        setIsSwapping(false);
+                      }}
+                    >
+                      {isSwapping ? "loading..." : "Confirm"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="opacity-25 fixed inset-0 z-40 bg-black"></div>
+          </>
+        )}
         {showMessage && (
           <div className="absolute top-8 left-1/2 transform -translate-x-1/2 bg-gray-300 shadow p-2 rounded w-50">
             Fetching new data ...
@@ -280,6 +426,8 @@ function App() {
               zkBBBalance={zkBBBalance}
               setComponentsUpdate={setComponentsUpdate}
               setShowMessage={setShowMessage}
+              txHash={txHash}
+              setTxHash={setTxHash}
             />
           )}
         </div>
