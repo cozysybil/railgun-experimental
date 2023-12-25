@@ -95,6 +95,8 @@ const {
   loadProvider,
   setLoggers,
   createRailgunWallet,
+  walletForID,
+  loadWalletByID,
   setOnBalanceUpdateCallback,
   setOnMerkletreeScanCallback,
   refreshRailgunBalances,
@@ -107,6 +109,9 @@ const {
   gasEstimateForUnprovenTransfer,
   generateTransferProof,
   populateProvedTransfer,
+  gasEstimateForUnprovenCrossContractCalls,
+  generateCrossContractCallsProof,
+  populateProvedCrossContractCalls,
 } = require("@railgun-community/wallet");
 const LevelDB = require("leveldown");
 const fs = require("fs");
@@ -122,6 +127,7 @@ const EventEmitter = require("events");
 const http = require("http");
 const socketIo = require("socket.io");
 const { testErc20ABI } = require("./abis/TestERC20");
+const { simpleSwap } = require("./abis/swap");
 
 const eventEmitter = new EventEmitter();
 
@@ -155,7 +161,7 @@ app.get("/api/v2/getWallet2", async (req, res) => {
   res.json(railgunWalletInfo2);
 });
 
-app.post("/api/v2/shield", async (req, res) => {
+app.post("/api/v2/shield/AA", async (req, res) => {
   const { amountInDecimal, railgunAddress } = req.body;
 
   // amountInDecimal = "3.0", "1.5", ... -> amountInHex = "0xDE0B6B3A7640000"
@@ -221,17 +227,168 @@ app.post("/api/v2/shield", async (req, res) => {
   });
 });
 
-app.post("/api/v2/unshield", async (req, res) => {
+app.post("/api/v2/shield/BB", async (req, res) => {
+  const { amountInDecimal, railgunAddress } = req.body;
+
+  // amountInDecimal = "3.0", "1.5", ... -> amountInHex = "0xDE0B6B3A7640000"
+  const amountInHex = decimalStrToHeximalStr(amountInDecimal);
+
+  // 3.1 give approval
+  const provider = new JsonRpcProvider("http://127.0.0.1:8545/");
+  const walletSigner = new Wallet(config.privateKey, provider);
+  // const testERC20ContractWithSigner = new Contract(
+  //   config.contracts.testERC20,
+  //   testErc20ABI,
+  //   walletSigner
+  // );
+  // const recieptOfApproval = await testERC20ContractWithSigner.approve(
+  //   config.contracts.proxy,
+  //   parseUnits("100", 18)
+  // );
+  // console.log({ recieptOfApproval });
+  // 3.2 shield
+  const erc20AmountRecipients = [
+    {
+      tokenAddress: config.contracts.testERC202, // testERC20
+      amount: BigInt(amountInHex), // 1*10^18 in hexadecimal amount
+      recipientAddress: railgunAddress, // RAILGUN address
+    },
+  ];
+  // The shieldPrivateKey enables the sender to decrypt
+  // the receiver's address in the future.
+  const wallet = new Wallet(config.privateKey);
+  const shieldSignatureMessage = "Hello world";
+  const shieldPrivateKey = keccak256(
+    await wallet.signMessage(shieldSignatureMessage)
+  );
+  const { gasEstimate: shieldGasEstimate } = await gasEstimateForShield(
+    "Hardhat",
+    shieldPrivateKey,
+    erc20AmountRecipients,
+    [], // nftAmountRecipients
+    config.public // Public wallet to shield from.
+  );
+  console.log({ shieldGasEstimate });
+  const gasDetails = {
+    evmGasType: EVMGasType.Type2, // Depends on the chain (BNB uses type 0)
+    gasEstimate: shieldGasEstimate, // Output from gasEstimateForDeposit
+    maxFeePerGas: BigInt("0x100000"), // Current gas Max Fee
+    maxPriorityFeePerGas: BigInt("0x010000"), // Current gas Max Priority Fee
+  };
+  const { transaction: shieldTransaction } = await populateShield(
+    "Hardhat",
+    shieldPrivateKey,
+    erc20AmountRecipients,
+    [], // nftAmountRecipients
+    gasDetails
+  );
+  // Public wallet to shield from.
+  shieldTransaction.from = config.public;
+  // console.debug(transaction) // send it through relayer, or send it yourself
+  const shieldTxReceipt = await walletSigner.sendTransaction(shieldTransaction);
+  console.debug(shieldTxReceipt);
+
+  res.json({
+    transactionHash: shieldTxReceipt.hash,
+  });
+});
+
+app.post("/api/v2/unshield/AA", async (req, res) => {
   const { amountInDecimal, id } = req.body;
 
   // amountInDecimal = "3.0", "1.5", ... -> amountInHex = "0xDE0B6B3A7640000"
   const amountInHex = decimalStrToHeximalStr(amountInDecimal);
   const provider = new JsonRpcProvider("http://127.0.0.1:8545/");
-  const walletSigner = new Wallet(config.privateKey, provider);
+  const walletSigner = new Wallet(config.relayerPrivateKey, provider);
 
   const erc20AmountRecipients2 = [
     {
       tokenAddress: config.contracts.testERC20, // testERC20
+      amount: BigInt(amountInHex), // 1*10^18 in hexadecimal amount
+      recipientAddress: config.public, // normal address
+    },
+  ];
+  // Gas price, used to calculate Relayer Fee iteratively.
+  const originalGasDetails = {
+    evmGasType: EVMGasType.Type2, // Depends on the chain (BNB uses type 0)
+    gasEstimate: 0n, // Always 0, we don't have this yet.
+    maxFeePerGas: BigInt("0x100000"), // Current gas Max Fee
+    maxPriorityFeePerGas: BigInt("0x010000"), // Current gas Max Priority Fee
+  };
+  // Whether to use a Relayer or self-signing wallet.
+  // true for self-signing, false for Relayer.
+  const sendWithPublicWallet = true;
+  const { gasEstimate: unshieldGasEstimate } =
+    await gasEstimateForUnprovenUnshield(
+      "V2_PoseidonMerkle",
+      "Hardhat",
+      id,
+      config.encryptionKey,
+      erc20AmountRecipients2,
+      [], // nftAmountRecipients
+      originalGasDetails,
+      {}, // Token Fee for selected Relayer.
+      sendWithPublicWallet
+    );
+  console.log({ unshieldGasEstimate });
+  console.log(`generate proof start - ${new Date().toLocaleString()}`);
+  await generateUnshieldProof(
+    "V2_PoseidonMerkle",
+    "Hardhat",
+    id,
+    config.encryptionKey,
+    erc20AmountRecipients2,
+    [], // nftAmountRecipients
+    {}, // relayerFeeERC20AmountRecipient
+    sendWithPublicWallet,
+    BigInt("0x0"), // // Minimum gas price, only required for relayed transaction.
+    progressCallback
+  );
+  console.log(`generate proof end - ${new Date().toLocaleString()}`);
+  // send transaction
+  // NOTE: Must follow proof generation.
+  // Gas price, used to calculate Relayer Fee iteratively.
+  const unshieldGasDetails = {
+    evmGasType: EVMGasType.Type2, // Depends on the chain (BNB uses type 0)
+    gasEstimate: unshieldGasEstimate, // Output from gasEstimateForDeposit
+    maxFeePerGas: BigInt("0x100000"), // Current gas Max Fee
+    maxPriorityFeePerGas: BigInt("0x010000"), // Current gas Max Priority Fee
+  };
+  const { transaction: unshieldTransaction } = await populateProvedUnshield(
+    "V2_PoseidonMerkle",
+    "Hardhat",
+    id,
+    erc20AmountRecipients2,
+    [], // nftAmountRecipients
+    {},
+    sendWithPublicWallet,
+    BigInt("0x0"),
+    unshieldGasDetails
+  );
+  // Public wallet to send from.
+  unshieldTransaction.from = config.relayerPublic;
+  // console.debug(unshieldTransaction) // send it through relayer, or send it yourself
+  const unshieldTxReceipt = await walletSigner.sendTransaction(
+    unshieldTransaction
+  );
+  console.debug(unshieldTxReceipt);
+
+  res.json({
+    transactionHash: unshieldTxReceipt.hash,
+  });
+});
+
+app.post("/api/v2/unshield/BB", async (req, res) => {
+  const { amountInDecimal, id } = req.body;
+
+  // amountInDecimal = "3.0", "1.5", ... -> amountInHex = "0xDE0B6B3A7640000"
+  const amountInHex = decimalStrToHeximalStr(amountInDecimal);
+  const provider = new JsonRpcProvider("http://127.0.0.1:8545/");
+  const walletSigner = new Wallet(config.relayerPrivateKey, provider);
+
+  const erc20AmountRecipients2 = [
+    {
+      tokenAddress: config.contracts.testERC202, // testERC20
       amount: BigInt(amountInHex), // 1*10^18 in hexadecimal amount
       recipientAddress: config.public, // normal address
     },
@@ -293,7 +450,7 @@ app.post("/api/v2/unshield", async (req, res) => {
     unshieldGasDetails
   );
   // Public wallet to send from.
-  unshieldTransaction.from = config.public;
+  unshieldTransaction.from = config.relayerPublic;
   // console.debug(unshieldTransaction) // send it through relayer, or send it yourself
   const unshieldTxReceipt = await walletSigner.sendTransaction(
     unshieldTransaction
@@ -305,13 +462,13 @@ app.post("/api/v2/unshield", async (req, res) => {
   });
 });
 
-app.post("/api/v2/transfer", async (req, res) => {
+app.post("/api/v2/transfer/AA", async (req, res) => {
   const { to, amountInDecimal, id } = req.body;
 
   // amountInDecimal = "3.0", "1.5", ... -> amountInHex = "0xDE0B6B3A7640000"
   const amountInHex = decimalStrToHeximalStr(amountInDecimal);
   const provider = new JsonRpcProvider("http://127.0.0.1:8545/");
-  const walletSigner = new Wallet(config.privateKey, provider);
+  const walletSigner = new Wallet(config.relayerPrivateKey, provider);
 
   // Optional encrypted memo text only readable by the sender and receiver.
   // May include text and emojis. See "Private Transfers" page for details.
@@ -390,7 +547,7 @@ app.post("/api/v2/transfer", async (req, res) => {
     transferGasDetails
   );
   // Public wallet to send from.
-  transferTransaction.from = config.public;
+  transferTransaction.from = config.relayerPublic;
   // console.debug(unshieldTransaction) // send it through relayer, or send it yourself
   const transferTxReceipt = await walletSigner.sendTransaction(
     transferTransaction
@@ -402,15 +559,243 @@ app.post("/api/v2/transfer", async (req, res) => {
   });
 });
 
+app.post("/api/v2/transfer/BB", async (req, res) => {
+  const { to, amountInDecimal, id } = req.body;
+
+  // amountInDecimal = "3.0", "1.5", ... -> amountInHex = "0xDE0B6B3A7640000"
+  const amountInHex = decimalStrToHeximalStr(amountInDecimal);
+  const provider = new JsonRpcProvider("http://127.0.0.1:8545/");
+  const walletSigner = new Wallet(config.relayerPrivateKey, provider);
+
+  // Optional encrypted memo text only readable by the sender and receiver.
+  // May include text and emojis. See "Private Transfers" page for details.
+  const memoText = "Thank you for breakfast! 🍝😋";
+
+  // Formatted token amounts to transfer.
+  const erc20AmountRecipients3 = [
+    {
+      tokenAddress: config.contracts.testERC202, // testERC20
+      amount: BigInt(amountInHex), // 1*10^18 in hexadecimal amount
+      recipientAddress: to,
+    },
+  ];
+
+  // Gas price, used to calculate Relayer Fee iteratively.
+  const originalGasDetails = {
+    evmGasType: EVMGasType.Type2, // Depends on the chain (BNB uses type 0)
+    gasEstimate: 0n, // Always 0, we don't have this yet.
+    maxFeePerGas: BigInt("0x100000"), // Current gas Max Fee
+    maxPriorityFeePerGas: BigInt("0x010000"), // Current gas Max Priority Fee
+  };
+  // Whether to use a Relayer or self-signing wallet.
+  // true for self-signing, false for Relayer.
+  const sendWithPublicWallet = true;
+  const { gasEstimate: transferGasEstimate } =
+    await gasEstimateForUnprovenTransfer(
+      "V2_PoseidonMerkle",
+      "Hardhat",
+      id,
+      config.encryptionKey,
+      memoText,
+      erc20AmountRecipients3,
+      [], // nftAmountRecipients
+      originalGasDetails,
+      {},
+      sendWithPublicWallet
+    );
+  console.log({ transferGasEstimate });
+  console.log(`generate proof start - ${new Date().toLocaleString()}`);
+  await generateTransferProof(
+    "V2_PoseidonMerkle",
+    "Hardhat",
+    id,
+    config.encryptionKey,
+    false, // showSenderAddressToRecipient
+    memoText,
+    erc20AmountRecipients3,
+    [], // nftAmountRecipients
+    {}, // relayerFeeERC20AmountRecipient
+    sendWithPublicWallet,
+    BigInt("0x0"), // // Minimum gas price, only required for relayed transaction.
+    progressCallback
+  );
+
+  // send transaction
+  // NOTE: Must follow proof generation.
+  // Gas price, used to calculate Relayer Fee iteratively.
+  const transferGasDetails = {
+    evmGasType: EVMGasType.Type2, // Depends on the chain (BNB uses type 0)
+    gasEstimate: transferGasEstimate, // Output from gasEstimateForDeposit
+    maxFeePerGas: BigInt("0x100000"), // Current gas Max Fee
+    maxPriorityFeePerGas: BigInt("0x010000"), // Current gas Max Priority Fee
+  };
+
+  const { transaction: transferTransaction } = await populateProvedTransfer(
+    "V2_PoseidonMerkle",
+    "Hardhat",
+    id,
+    false, // showSenderAddressToRecipient
+    memoText,
+    erc20AmountRecipients3,
+    [], // nftAmountRecipients
+    {},
+    sendWithPublicWallet,
+    BigInt("0x0"),
+    transferGasDetails
+  );
+  // Public wallet to send from.
+  transferTransaction.from = config.relayerPublic;
+  // console.debug(unshieldTransaction) // send it through relayer, or send it yourself
+  const transferTxReceipt = await walletSigner.sendTransaction(
+    transferTransaction
+  );
+  console.debug(transferTxReceipt);
+
+  res.json({
+    transactionHash: transferTxReceipt.hash,
+  });
+});
+
+app.post("/api/V2/swap", async (req, res) => {
+  const { sell, amount, buy, id, zkWallet } = req.body;
+
+  const originalGasDetails = {
+    evmGasType: EVMGasType.Type2, // Depends on the chain (BNB uses type 0)
+    gasEstimate: 0n, // Always 0, we don't have this yet.
+    maxFeePerGas: BigInt("0x100000"), // Current gas Max Fee
+    maxPriorityFeePerGas: BigInt("0x010000"), // Current gas Max Priority Fee
+  };
+
+  const sendWithPublicWallet = true;
+
+  const unshieldERC20Amounts = [
+    {
+      tokenAddress: sell.toLowerCase(),
+      amount: parseUnits(amount, 18),
+    },
+  ];
+
+  const shieldERC20Recipients = [
+    { tokenAddress: buy.toLowerCase(), recipientAddress: zkWallet },
+  ];
+
+  const sellTokenAmountAfterUnshieldFee =
+    (parseFloat(amount) * (10000 - 25)) / 10000;
+  const provider = new JsonRpcProvider("http://127.0.0.1:8545/");
+  const erc20 = new Contract(sell.toLowerCase(), testErc20ABI, provider);
+  const transactionApproveSwap = await erc20.approve.populateTransaction(
+    config.contracts.swap,
+    parseUnits(sellTokenAmountAfterUnshieldFee.toString(), 18)
+  );
+  const swap = new Contract(
+    config.contracts.swap.toLowerCase(),
+    simpleSwap,
+    provider
+  );
+  const transactionSwap = await swap.swap.populateTransaction(
+    sell.toLowerCase(),
+    buy.toLowerCase(),
+    parseUnits(sellTokenAmountAfterUnshieldFee.toString(), 18),
+    "10000"
+  );
+
+  const crossContractCalls = [transactionApproveSwap, transactionSwap];
+
+  // const railgunWalletInfo = await loadWalletByID(config.encryptionKey, id);
+  // console.log(railgunWalletInfo);
+
+  const railgunWalletInfo = await createRailgunWallet(
+    config.encryptionKey,
+    config.mnemonic,
+    {}
+  );
+
+  const { gasEstimate: crossContractGasEstimate } =
+    await gasEstimateForUnprovenCrossContractCalls(
+      "V2_PoseidonMerkle",
+      "Hardhat",
+      railgunWalletInfo.id,
+      config.encryptionKey,
+      unshieldERC20Amounts, // "relayAdaptUnshieldERC20Amounts: RailgunERC20Amount[]", // unshieldERC20Amounts[]
+      [], //RailgunNFTAmount[]
+      shieldERC20Recipients, // "relayAdaptShieldERC20Recipients: RailgunERC20Recipient[]",
+      [], // nftAmountRecipients
+      crossContractCalls, // "crossContractCalls: ContractTransaction[]",
+      originalGasDetails,
+      {}, // feeTokenDetails
+      sendWithPublicWallet,
+      2700000n // minGasLimit
+    );
+  console.log("crossContractGasEstimate", crossContractGasEstimate);
+
+  console.log(
+    `generate cross contract proof start - ${new Date().toLocaleString()}`
+  );
+  await generateCrossContractCallsProof(
+    "V2_PoseidonMerkle",
+    "Hardhat",
+    railgunWalletInfo.id,
+    config.encryptionKey,
+    unshieldERC20Amounts,
+    [],
+    shieldERC20Recipients,
+    [],
+    crossContractCalls,
+    undefined,
+    sendWithPublicWallet,
+    undefined,
+    2700000n,
+    progressCallback
+  );
+
+  const gasDetails = {
+    evmGasType: EVMGasType.Type2,
+    gasEstimate: crossContractGasEstimate,
+    maxFeePerGas: BigInt("0x100000"),
+    maxPriorityFeePerGas: BigInt("0x010000"),
+  };
+
+  const { transaction: crossContractCallTransaction } =
+    await populateProvedCrossContractCalls(
+      "V2_PoseidonMerkle",
+      "Hardhat",
+      railgunWalletInfo.id,
+      unshieldERC20Amounts,
+      [],
+      shieldERC20Recipients,
+      [],
+      crossContractCalls,
+      undefined,
+      sendWithPublicWallet,
+      undefined,
+      gasDetails
+    );
+
+  // Public wallet to send from.
+  crossContractCallTransaction.from = config.relayerPublic;
+  const walletSigner = new Wallet(config.relayerPrivateKey, provider);
+  const crossContractCallTxReceipt = await walletSigner.sendTransaction(
+    crossContractCallTransaction
+  );
+  console.debug(crossContractCallTxReceipt);
+
+  res.json({
+    transactionHash: crossContractCallTxReceipt.hash,
+  });
+});
+
 let config = {
   rpc: "http://localhost:8545/",
   chainId: 31337,
   mnemonic: "test test test test test test test test test test test junk",
   encryptionKey:
     "0101010101010101010101010101010101010101010101010101010101010101", // Database encryption key. Keep this very safe.
-  public: "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+  public: "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", // hardhat public key for testing
   privateKey:
-    "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d",
+    "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d", // hardhat private key for testing
+  relayerPublic: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266", // hardhat public key for testing
+  relayerPrivateKey:
+    "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80", // hardhat private key for testing
   contracts: {
     delegator: "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
     governorRewardsImplementation: "",
@@ -421,12 +806,14 @@ let config = {
     rail: "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
     staking: "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
     testERC20: "0x202CCe504e04bEd6fC0521238dDf04Bc9E8E15aB",
+    testERC202: "0xf4B146FbA71F41E0592668ffbF264F1D186b2Ca8",
     testERC721: "0xf4B146FbA71F41E0592668ffbF264F1D186b2Ca8",
     treasuryImplementation: "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
     treasuryProxy: "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318",
     voting: "0x0165878A594ca255338adfa4d48449f69242Eb8F",
     weth9: "0x8198f5d8F8CfFE8f9C413d98a0A55aEB8ab9FbB7",
     relayAdapt: "0x0355B7B8cb128fA5692729Ab3AAa199C1753f726",
+    swap: "0x172076E0166D1F9Cc711C77Adf8488051744980C",
   },
   mnemonic2: "test test test test test test test test test test junk junk",
   encryptionKey2:

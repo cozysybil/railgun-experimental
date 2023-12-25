@@ -1,16 +1,62 @@
-import { HardhatUserConfig } from "hardhat/config";
-import "@nomicfoundation/hardhat-toolbox";
+import { HardhatUserConfig } from 'hardhat/config';
+import '@nomicfoundation/hardhat-chai-matchers';
+import '@nomiclabs/hardhat-ethers';
+import '@nomiclabs/hardhat-etherscan';
+import '@typechain/hardhat';
+import 'hardhat-contract-sizer';
+import 'hardhat-gas-reporter';
+import 'solidity-coverage';
+import 'hardhat-local-networks-config-plugin';
+
+import './tasks';
+
+import mocharc from './.mocharc.json';
 
 const config: HardhatUserConfig = {
-  solidity: "0.8.16",
+  defaultNetwork: 'hardhat',
   networks: {
     localhost: {
-      url: "http://127.0.0.1:8545",
+      url: 'http://127.0.0.1:8545/',
     },
-    ganache: {
-      url: "http://127.0.0.1:7545",
-      accounts: ['c72b22da5cd9038d0f3d2e6776b345daa31cd5bc4cca31a82f6deec20d63c7b7']
+  },
+  solidity: {
+    compilers: [
+      {
+        version: '0.8.17',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 200,
+          },
+          // Enable in future if contract size is an issue
+          // Not enabling now because hardhat stack traces and
+          // coverage reporting don't yet support it
+          // viaIR: true,
+          outputSelection: {
+            '*': {
+              '*': ['storageLayout'],
+            },
+          },
+        },
+      },
+    ],
+    overrides: {
+      // Enable this to turn of viaIR for proxy contract
+      // 'contracts/proxy/Proxy.sol': {
+      //   version: '0.8.17',
+      //   settings: {
+      //     viaIR: false,
+      //   },
+      // },
     },
+  },
+  mocha: mocharc,
+  gasReporter: {
+    enabled: true,
+    currency: 'USD',
+  },
+  etherscan: {
+    apiKey: process.env.ETHERSCAN_API_KEY,
   },
 };
 

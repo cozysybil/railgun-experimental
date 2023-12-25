@@ -1,5 +1,10 @@
 import { ethers, Contract, Wallet } from "ethers";
 
+export enum Currency {
+  AA = "0x202CCe504e04bEd6fC0521238dDf04Bc9E8E15aB",
+  BB = "0xf4B146FbA71F41E0592668ffbF264F1D186b2Ca8",
+}
+
 // Define the contract address and ABI
 const contractAddress = process.env.REACT_APP_COIN_ADDRESS || "";
 const contractABI = [
@@ -302,12 +307,11 @@ const contractABI = [
 const rpc = process.env.REACT_APP_RPC_URL || "";
 
 // Function to get balance
-export async function getBalance(address: string): Promise<string> {
-  if (
-    contractAddress.length === 0 ||
-    rpc.length === 0 ||
-    address.length === 0
-  ) {
+export async function getBalance(
+  address: string,
+  currency: Currency
+): Promise<string> {
+  if (currency.length === 0 || rpc.length === 0 || address.length === 0) {
     return "0";
   }
   try {
@@ -315,7 +319,7 @@ export async function getBalance(address: string): Promise<string> {
     const signer = provider.getSigner();
     // Connect to the contract
     const contractWithSigner = new ethers.Contract(
-      contractAddress,
+      currency,
       contractABI,
       signer
     );
@@ -329,15 +333,15 @@ export async function getBalance(address: string): Promise<string> {
 }
 
 // Function to mint coins
-export async function mint(to: string, amount: string): Promise<void> {
+export async function mint(
+  to: string,
+  amount: string,
+  currency: Currency
+): Promise<void> {
   // Assuming the contract method name is "mint"
   const provider = new ethers.providers.JsonRpcProvider(rpc);
   const signer = provider.getSigner();
-  const contractWithSigner = new ethers.Contract(
-    contractAddress,
-    contractABI,
-    signer
-  );
+  const contractWithSigner = new ethers.Contract(currency, contractABI, signer);
 
   await contractWithSigner.mint(to, ethers.utils.parseUnits(amount, 18));
 }
@@ -347,7 +351,8 @@ export async function transfer(
   metamask: boolean,
   privateKey: string,
   to: string,
-  amount: string
+  amount: string,
+  currency: Currency
 ): Promise<string> {
   try {
     let contractWithSigner: ethers.Contract;
@@ -357,7 +362,7 @@ export async function transfer(
       await provider.send("eth_requestAccounts", []);
       const signer = provider.getSigner();
       contractWithSigner = new ethers.Contract(
-        contractAddress,
+        currency,
         contractABI,
         signer
       );
@@ -365,7 +370,7 @@ export async function transfer(
       const provider = new ethers.providers.JsonRpcProvider(rpc);
       const signer = new ethers.Wallet(privateKey, provider);
       contractWithSigner = new ethers.Contract(
-        contractAddress,
+        currency,
         contractABI,
         signer
       );
