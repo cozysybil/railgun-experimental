@@ -108,10 +108,10 @@ To start the app, follow these steps:
 
    To fix this, edit function `generateERC20ShieldRequests` in `node_modules/@railgun-community/wallet/dist/services/transactions/tx-shield.js`.
 
-   ```bash
-   # replace this line:
+   ```javascript
+   // replace this line:
    const serializedShield = shield.serialize((0, engine_1.hexToBytes)(shieldPrivateKey), viewingPublicKey)
-   # with:
+   // with:
    const serializedShield = shield.serialize(shieldPrivateKey, viewingPublicKey)
    ```
 
